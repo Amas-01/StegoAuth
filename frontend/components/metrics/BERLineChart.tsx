@@ -21,65 +21,86 @@ interface BERLineChartProps {
 }
 
 export default function BERLineChart({ data }: BERLineChartProps) {
-  const chartData = [...data]
-    .sort((a, b) => a.quality_factor - b.quality_factor)
+  const chartData = [...data].sort((a, b) => a.quality_factor - b.quality_factor)
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4">
-      <p className="text-sm font-medium text-slate-700 mb-4">
-        Figure 4.4: Mean BER vs JPEG Quality Factor — LSB vs DCT
+    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-5 font-mono">
+        Mean BER vs JPEG Quality Factor — LSB vs DCT
       </p>
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+        <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="#94a3b8"
+            opacity={0.2}
+          />
           <XAxis
             dataKey="quality_factor"
-            tick={{ fontSize: 12 }}
+            reversed={true}
+            tick={{ fontFamily: "var(--font-mono)", fontSize: 11, fill: "#94a3b8" }}
             label={{
-              value: "Quality Factor",
+              value: "JPEG Quality Factor",
               position: "insideBottom",
-              offset: -5,
-              style: { fontSize: 12, fill: "#64748b" },
+              offset: -10,
+              style: { fontSize: 11, fill: "#94a3b8", fontFamily: "var(--font-mono)" },
             }}
+            stroke="#475569"
           />
           <YAxis
             domain={[0, 1]}
-            tick={{ fontSize: 12 }}
+            tick={{ fontFamily: "var(--font-mono)", fontSize: 11, fill: "#94a3b8" }}
             label={{
-              value: "Bit Error Rate (BER)",
+              value: "BER",
               angle: -90,
               position: "insideLeft",
-              style: { fontSize: 12, fill: "#64748b" },
+              style: { fontSize: 11, fill: "#94a3b8", fontFamily: "var(--font-mono)" },
             }}
+            stroke="#475569"
           />
-          <Tooltip />
-          <Legend />
           <ReferenceLine
             y={0}
             stroke="#22c55e"
-            strokeDasharray="5 5"
+            strokeDasharray="4 4"
             label={{
               value: "Perfect Recovery",
-              position: "right",
-              fontSize: 11,
               fill: "#22c55e",
+              fontSize: 10,
+              fontFamily: "var(--font-mono)",
+              position: "right",
             }}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "var(--tooltip-bg, #1e293b)",
+              border: "1px solid #334155",
+              borderRadius: "8px",
+              fontFamily: "var(--font-mono)",
+              fontSize: "12px",
+            }}
+            labelStyle={{ color: "#94a3b8" }}
+            itemStyle={{ color: "#e2e8f0" }}
+          />
+          <Legend
+            wrapperStyle={{ fontFamily: "var(--font-mono)", fontSize: "12px", paddingTop: "12px" }}
           />
           <Line
             type="monotone"
             dataKey="lsb.ber"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            dot={{ r: 4, fill: "#3b82f6" }}
             name="LSB"
+            stroke="#3b82f6"
+            strokeWidth={2.5}
+            dot={{ fill: "#3b82f6", r: 5, strokeWidth: 0 }}
+            activeDot={{ r: 7, fill: "#60a5fa" }}
           />
           <Line
             type="monotone"
             dataKey="dct.ber"
-            stroke="#f97316"
-            strokeWidth={2}
-            dot={{ r: 4, fill: "#f97316" }}
             name="DCT"
+            stroke="#f97316"
+            strokeWidth={2.5}
+            dot={{ fill: "#f97316", r: 5, strokeWidth: 0 }}
+            activeDot={{ r: 7, fill: "#fb923c" }}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -96,65 +117,86 @@ interface PSNRLineChartProps {
 }
 
 export function PSNRLineChart({ data }: PSNRLineChartProps) {
-  const chartData = [...data]
-    .sort((a, b) => a.quality_factor - b.quality_factor)
+  const chartData = [...data].sort((a, b) => a.quality_factor - b.quality_factor)
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4">
-      <p className="text-sm font-medium text-slate-700 mb-4">
-        Figure 4.5: Post-Compression PSNR vs JPEG Quality Factor
+    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-5 font-mono">
+        Post-Compression PSNR vs JPEG Quality Factor
       </p>
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+        <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="#94a3b8"
+            opacity={0.2}
+          />
           <XAxis
             dataKey="quality_factor"
-            tick={{ fontSize: 12 }}
+            reversed={true}
+            tick={{ fontFamily: "var(--font-mono)", fontSize: 11, fill: "#94a3b8" }}
             label={{
-              value: "Quality Factor",
+              value: "JPEG Quality Factor",
               position: "insideBottom",
-              offset: -5,
-              style: { fontSize: 12, fill: "#64748b" },
+              offset: -10,
+              style: { fontSize: 11, fill: "#94a3b8", fontFamily: "var(--font-mono)" },
             }}
+            stroke="#475569"
           />
           <YAxis
             domain={[0, 60]}
-            tick={{ fontSize: 12 }}
+            tick={{ fontFamily: "var(--font-mono)", fontSize: 11, fill: "#94a3b8" }}
             label={{
-              value: "Post-Compression PSNR (dB)",
+              value: "PSNR (dB)",
               angle: -90,
               position: "insideLeft",
-              style: { fontSize: 12, fill: "#64748b" },
+              style: { fontSize: 11, fill: "#94a3b8", fontFamily: "var(--font-mono)" },
             }}
+            stroke="#475569"
           />
-          <Tooltip />
-          <Legend />
           <ReferenceLine
             y={40}
             stroke="#22c55e"
-            strokeDasharray="5 5"
+            strokeDasharray="4 4"
             label={{
               value: "Imperceptibility Threshold (40 dB)",
-              position: "right",
-              fontSize: 11,
               fill: "#22c55e",
+              fontSize: 10,
+              fontFamily: "var(--font-mono)",
+              position: "right",
             }}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "var(--tooltip-bg, #1e293b)",
+              border: "1px solid #334155",
+              borderRadius: "8px",
+              fontFamily: "var(--font-mono)",
+              fontSize: "12px",
+            }}
+            labelStyle={{ color: "#94a3b8" }}
+            itemStyle={{ color: "#e2e8f0" }}
+          />
+          <Legend
+            wrapperStyle={{ fontFamily: "var(--font-mono)", fontSize: "12px", paddingTop: "12px" }}
           />
           <Line
             type="monotone"
             dataKey="lsb.post_compression_psnr"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            dot={{ r: 4, fill: "#3b82f6" }}
             name="LSB"
+            stroke="#3b82f6"
+            strokeWidth={2.5}
+            dot={{ fill: "#3b82f6", r: 5, strokeWidth: 0 }}
+            activeDot={{ r: 7, fill: "#60a5fa" }}
           />
           <Line
             type="monotone"
             dataKey="dct.post_compression_psnr"
-            stroke="#f97316"
-            strokeWidth={2}
-            dot={{ r: 4, fill: "#f97316" }}
             name="DCT"
+            stroke="#f97316"
+            strokeWidth={2.5}
+            dot={{ fill: "#f97316", r: 5, strokeWidth: 0 }}
+            activeDot={{ r: 7, fill: "#fb923c" }}
           />
         </LineChart>
       </ResponsiveContainer>

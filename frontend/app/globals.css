@@ -1,14 +1,63 @@
+/* Google Fonts — loaded at runtime (browser CDN), not at build time */
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --foreground: #1a1a1a;
-  --background: #ffffff;
+  --font-urbanist: 'Urbanist', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --foreground: #0f172a;
+  --background: #f8fafc;
+  --tooltip-bg: #1e293b;
+}
+
+.dark {
+  --foreground: #f1f5f9;
+  --background: #030712;
+  --tooltip-bg: #0f172a;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-urbanist), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Monospace utility for metric values, tokens, code */
+.font-metric,
+.font-token,
+code,
+pre {
+  font-family: var(--font-mono), 'Courier New', monospace;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
 }

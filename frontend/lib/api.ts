@@ -11,7 +11,10 @@ const API_BASE_URL =
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 60000,
+  timeout: 60000, // 60 second default timeout
+  headers: {
+    "Content-Type": "multipart/form-data",
+  },
 })
 
 export async function embedLsb(
@@ -61,7 +64,10 @@ export async function compareTechniques(
   const form = new FormData()
   form.append("image", image)
   form.append("token", token)
-  const { data } = await api.post<CompareResponse>("/compare", form)
+  // 90 second timeout — DCT + LSB dual processing takes 15–45s
+  const { data } = await api.post<CompareResponse>("/compare", form, {
+    timeout: 90000,
+  })
   return data
 }
 
@@ -74,7 +80,10 @@ export async function runRobustnessTest(
   form.append("image", image)
   form.append("token", token)
   form.append("quality_factors", qualityFactors)
-  const { data } = await api.post<RobustnessResponse>("/robustness", form)
+  // 120 second timeout — loops through 5 quality levels × 2 techniques
+  const { data } = await api.post<RobustnessResponse>("/robustness", form, {
+    timeout: 120000,
+  })
   return data
 }
 
@@ -95,5 +104,12 @@ export async function healthCheck(): Promise<{
   const { data } = await api.get("/health")
   return data
 }
+
+// Named convenience exports for heavy endpoints with explicit timeout docs
+export const compareApi = (formData: FormData) =>
+  api.post("/compare", formData, { timeout: 90000 })
+
+export const robustnessApi = (formData: FormData) =>
+  api.post("/robustness", formData, { timeout: 120000 })
 
 export default api
