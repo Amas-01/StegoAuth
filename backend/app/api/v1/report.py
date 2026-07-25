@@ -2,6 +2,8 @@ from datetime import datetime
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
+from typing import Optional
+
 from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -26,7 +28,7 @@ class ReportRequest(BaseModel):
     verdict: dict = Field(default_factory=dict, description="Comparative verdict")
     original_token: str = Field(default="", description="Original embedded token")
     extracted_token: str = Field(default="", description="Extracted token for verification")
-    token_match: bool = Field(default=False, description="Whether extracted token matches original")
+    token_match: Optional[bool] = Field(default=None, description="Whether extracted token matches original (None = not verified)")
 
 
 @router.post("/report/generate")

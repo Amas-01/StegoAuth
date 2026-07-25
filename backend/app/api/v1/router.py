@@ -6,6 +6,7 @@ from app.api.v1.extract import router as extract_router
 from app.api.v1.compare import router as compare_router
 from app.api.v1.robustness import router as robustness_router
 from app.api.v1.report import router as report_router
+from app.api.v1.auth import router as auth_router
 
 api_router = APIRouter()
 
@@ -15,3 +16,4 @@ api_router.include_router(extract_router, tags=["Extract"])
 api_router.include_router(compare_router, tags=["Compare"])
 api_router.include_router(robustness_router, tags=["Robustness"])
 api_router.include_router(report_router, tags=["Report"])
+api_router.include_router(auth_router, tags=["Authentication"])

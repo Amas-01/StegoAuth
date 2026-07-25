@@ -51,3 +51,11 @@ env/
 
 # WeasyPrint
 weasyprint-*
+
+# SQLite auth history database
+auth_history.db
+
+# Project assets
+*.docx
+*.pdf
+Screenshot from *.png

@@ -1,16 +1,38 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import Navbar from "@/components/layout/Navbar"
 import Footer from "@/components/layout/Footer"
 import DropZone from "@/components/upload/DropZone"
 import ImagePreview from "@/components/upload/ImagePreview"
 import PageTransition from "@/components/ui/PageTransition"
 import AnimatedSection from "@/components/ui/AnimatedSection"
-import { embedDct, extractDct, generateReport, compareTechniques, runRobustnessTest } from "@/lib/api"
+import { embedDct, extractDct, generateReport, compareTechniques, runRobustnessTest, saveAuthRecord, getAuthRecords, lookupAuthRecord } from "@/lib/api"
 import { useLoadingContext } from "@/context/LoadingContext"
-import type { EmbedResponse, CompareResponse, RobustnessResponse } from "@/lib/types"
-import { CheckCircle2, XCircle, Download, FileText, Loader2 } from "lucide-react"
+import type { EmbedResponse, CompareResponse, RobustnessResponse, AuthRecord } from "@/lib/types"
+import { CheckCircle2, XCircle, Download, FileText, Loader2, History } from "lucide-react"
+
+function getSessionId(): string {
+  if (typeof window === "undefined") return ""
+  let sid = localStorage.getItem("stegoauth_session")
+  if (!sid) {
+    sid = crypto.randomUUID()
+    localStorage.setItem("stegoauth_session", sid)
+  }
+  return sid
+}
+
+function base64ToBlob(b64: string, mimeType: string = "image/png"): Blob {
+  const byteChars = atob(b64)
+  const byteArrays: BlobPart[] = []
+  for (let offset = 0; offset < byteChars.length; offset += 512) {
+    const slice = byteChars.slice(offset, offset + 512)
+    const byteNumbers = new Array(slice.length)
+    for (let i = 0; i < slice.length; i++) byteNumbers[i] = slice.charCodeAt(i)
+    byteArrays.push(new Uint8Array(byteNumbers))
+  }
+  return new Blob(byteArrays, { type: mimeType })
+}
 
 async function sha256(buffer: ArrayBuffer): Promise<string> {
   const hashBuffer = await crypto.subtle.digest("SHA-256", buffer)
@@ -34,8 +56,16 @@ export default function ReportPage() {
   const [reportLoading, setReportLoading] = useState(false)
   const [compareData, setCompareData] = useState<CompareResponse | null>(null)
   const [robustnessData, setRobustnessData] = useState<RobustnessResponse | null>(null)
+  const [authRecords, setAuthRecords] = useState<AuthRecord[]>([])
+  const [verifyHistory, setVerifyHistory] = useState<AuthRecord | null>(null)
 
   const { startLoading, stopLoading } = useLoadingContext()
+  const sessionIdRef = useRef("")
+
+  useEffect(() => {
+    sessionIdRef.current = getSessionId()
+    getAuthRecords(sessionIdRef.current).then((res) => setAuthRecords(res.records)).catch(() => {})
+  }, [])
 
   const cardCls = "bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-6"
   const btnBlue = "inline-flex items-center justify-center gap-2 w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:shadow-blue-500/20 hover:shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -51,6 +81,11 @@ export default function ReportPage() {
       const hash = await sha256(buffer)
       const res = await embedDct(authFile, hash)
       setAuthResult(res); setAuthHash(hash)
+      const sid = sessionIdRef.current || getSessionId()
+      sessionIdRef.current = sid
+      await saveAuthRecord(sid, hash, authFile.name)
+      const records = await getAuthRecords(sid)
+      setAuthRecords(records.records)
     } catch (err: unknown) {
       setAuthError(err instanceof Error ? err.message : "Authentication failed.")
     } finally {
@@ -60,12 +95,14 @@ export default function ReportPage() {
 
   const handleVerify = useCallback(async () => {
     if (!verifyFile || !authHash) return
-    setVerifyLoading(true); setVerifyError(null); setVerifyToken(null); setVerifyMatch(null)
+    setVerifyLoading(true); setVerifyError(null); setVerifyToken(null); setVerifyMatch(null); setVerifyHistory(null)
     startLoading("/extract/dct")
     try {
       const res = await extractDct(verifyFile)
       setVerifyToken(res.extracted_token)
       setVerifyMatch(res.extracted_token.trim() === authHash)
+      const lr = await lookupAuthRecord(res.extracted_token.trim())
+      if (lr.found) setVerifyHistory(lr.record)
     } catch (err: unknown) {
       setVerifyError(err instanceof Error ? err.message : "Verification failed.")
     } finally {
@@ -90,12 +127,21 @@ export default function ReportPage() {
       let rob = robustnessData
       if (!cmp) { cmp = await compareTechniques(authFile!, authHash); setCompareData(cmp) }
       if (!rob) { rob = await runRobustnessTest(authFile!, authHash); setRobustnessData(rob) }
-      const payload = {
+      let reportToken = verifyToken
+      let reportMatch: boolean | null = verifyMatch
+      if (reportToken === null && cmp.dct_stego_b64) {
+        const blob = base64ToBlob(cmp.dct_stego_b64)
+        const file = new File([blob], "stego_dct.png", { type: "image/png" })
+        const extRes = await extractDct(file)
+        reportToken = extRes.extracted_token
+        reportMatch = extRes.extracted_token.trim() === authHash
+      }
+      const payload: Record<string, unknown> = {
         original_b64: cmp.original_b64, lsb_stego_b64: cmp.lsb_stego_b64, dct_stego_b64: cmp.dct_stego_b64,
         lsb_heatmap_b64: cmp.lsb_heatmap_b64, dct_heatmap_b64: cmp.dct_heatmap_b64,
         lsb_metrics: cmp.lsb_metrics, dct_metrics: cmp.dct_metrics,
         robustness_results: rob.results, verdict: cmp.verdict,
-        original_token: authHash, extracted_token: verifyToken || "", token_match: verifyMatch || false,
+        original_token: authHash, extracted_token: reportToken || "", token_match: reportMatch,
       }
       const pdfBlob = await generateReport(payload)
       const url = URL.createObjectURL(pdfBlob)
@@ -179,7 +225,7 @@ export default function ReportPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Stego Image to Verify</p>
                   {verifyFile ? (
-                    <ImagePreview file={verifyFile} onClear={() => { setVerifyFile(null); setVerifyToken(null); setVerifyMatch(null) }} />
+                    <ImagePreview file={verifyFile} onClear={() => { setVerifyFile(null); setVerifyToken(null); setVerifyMatch(null); setVerifyHistory(null) }} />
                   ) : (
                     <DropZone onFileSelect={setVerifyFile} label="Drop stego image here to verify" />
                   )}
@@ -200,6 +246,13 @@ export default function ReportPage() {
                       </div>
                       {verifyToken && <div className="bg-white/80 dark:bg-gray-800/50 rounded-lg p-2 mt-2"><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Extracted Token</p><p className="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{verifyToken}</p></div>}
                       <div className="bg-white/80 dark:bg-gray-800/50 rounded-lg p-2 mt-1"><p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Expected Hash</p><p className="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{authHash}</p></div>
+                      {verifyHistory && (
+                        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2 mt-2 border border-blue-200 dark:border-blue-800">
+                          <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Previously authenticated</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">File: {verifyHistory.original_filename || "unknown"}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Date: {new Date(verifyHistory.created_at).toLocaleString()}</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -207,8 +260,42 @@ export default function ReportPage() {
             </section>
           </AnimatedSection>
 
-          {/* PDF Report Export */}
+          {/* Auth History */}
           <AnimatedSection delay={0.3}>
+            <section className={`${cardCls} mb-8`}>
+              <div className="flex items-center gap-2 mb-4">
+                <History className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <h2 className="font-heading text-lg font-semibold text-gray-800 dark:text-gray-100">Authentication History</h2>
+              </div>
+              {authRecords.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No authentication records yet. Authenticate an image above to create a record.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                        <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Date</th>
+                        <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Original File</th>
+                        <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">SHA-256 Hash</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {authRecords.map((rec) => (
+                        <tr key={rec.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                          <td className="py-2 px-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{new Date(rec.created_at).toLocaleString()}</td>
+                          <td className="py-2 px-3 text-gray-800 dark:text-gray-200">{rec.original_filename || "unknown"}</td>
+                          <td className="py-2 px-3 font-mono text-xs text-gray-500 dark:text-gray-400 max-w-[200px] truncate">{rec.image_hash}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          </AnimatedSection>
+
+          {/* PDF Report Export */}
+          <AnimatedSection delay={0.35}>
             <section className={cardCls}>
               <h2 className="font-heading text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">PDF Report Export</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Generate a full analysis report including images, quality metrics, robustness results, and authentication verification. The report will be downloaded as a PDF file.</p>

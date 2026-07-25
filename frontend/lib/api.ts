@@ -4,6 +4,9 @@ import type {
   ExtractResponse,
   CompareResponse,
   RobustnessResponse,
+  AuthRecordResponse,
+  AuthRecordsListResponse,
+  AuthLookupResponse,
 } from "@/lib/types"
 
 const API_BASE_URL =
@@ -92,6 +95,38 @@ export async function generateReport(
 ): Promise<Blob> {
   const { data } = await api.post("/report/generate", reportData, {
     responseType: "blob",
+    headers: { "Content-Type": "application/json" },
+  })
+  return data
+}
+
+export async function saveAuthRecord(
+  sessionId: string,
+  imageHash: string,
+  originalFilename: string
+): Promise<AuthRecordResponse> {
+  const { data } = await api.post("/auth/record", {
+    session_id: sessionId,
+    image_hash: imageHash,
+    original_filename: originalFilename,
+  })
+  return data
+}
+
+export async function getAuthRecords(
+  sessionId: string
+): Promise<AuthRecordsListResponse> {
+  const { data } = await api.post("/auth/records", {
+    session_id: sessionId,
+  })
+  return data
+}
+
+export async function lookupAuthRecord(
+  imageHash: string
+): Promise<AuthLookupResponse> {
+  const { data } = await api.post("/auth/lookup", {
+    image_hash: imageHash,
   })
   return data
 }

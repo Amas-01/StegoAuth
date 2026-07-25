@@ -84,7 +84,12 @@ def _build_html_report(data: dict) -> str:
     # Conclusion
     rq4 = verdict.get("rq4_answer", "No conclusion available.")
 
-    token_status = "✅ MATCH — Token successfully verified" if token_match else "❌ MISMATCH — Token verification failed"
+    if token_match is None:
+        token_status = "⚠️ NOT VERIFIED — Upload the stego image and run verification"
+    elif token_match:
+        token_status = "✅ MATCH — Token successfully verified"
+    else:
+        token_status = "❌ MISMATCH — Token verification failed"
 
     return f"""<!DOCTYPE html>
 <html lang="en">

@@ -8,6 +8,7 @@ from slowapi.util import get_remote_address
 
 from app.core.config import get_settings
 from app.core.middleware import SecurityHeadersMiddleware
+from app.core.database import init_db
 from app.api.v1.router import api_router
 
 settings = get_settings()
@@ -38,6 +39,7 @@ app.add_middleware(
 
 app.add_middleware(SecurityHeadersMiddleware)
 
+init_db()
 app.include_router(api_router, prefix="/api/v1")
 
 

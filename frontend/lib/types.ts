@@ -75,3 +75,24 @@ export interface ApiError {
   message: string
   status_code: number
 }
+
+export interface AuthRecord {
+  id: number
+  session_id: string
+  image_hash: string
+  original_filename: string
+  created_at: string
+}
+
+export interface AuthRecordResponse {
+  status: string
+}
+
+export interface AuthRecordsListResponse {
+  records: AuthRecord[]
+}
+
+export interface AuthLookupResponse {
+  found: boolean
+  record: AuthRecord | null
+}
