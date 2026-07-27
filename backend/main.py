@@ -51,10 +51,7 @@ async def add_process_time_header(request: Request, call_next):
     process_time = time.perf_counter() - start_time
     response.headers["X-Process-Time"] = f"{process_time:.4f}"
     return response
-    
-@app.get("/healthz")
-def render_health_check_endpoint():
-    return {"status": healthy"}
+
 
 if __name__ == "__main__":
     import uvicorn
